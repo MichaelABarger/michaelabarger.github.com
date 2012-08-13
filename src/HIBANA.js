@@ -108,8 +108,8 @@ HIBANA.prototype = {
 		emitter.particle_count = parameters.particle_count || 300;
 		emitter.particle_color = parameters.particle_color || new THREE.Color( 0xFFFFFF );
 		emitter.rate = parameters.rate || 75;
-		emitter.particle_life_expectancy_min = parameters.particle_life_expectancy_min || 10;
-		emitter.particle_life_expectancy_range = parameters.particle_life_expectancy_range || 25;
+		emitter.particle_lifetime_min = parameters.particle_lifetime_min || 10;
+		emitter.particle_lifetime_range = parameters.particle_lifetime_range || 25;
 		emitter.emission_angle = parameters.emission_angle || 0.0;
 		emitter.emission_force = parameters.emission_force || 1.0;
 		emitter.jitter_factor = parameters.jitter_factor || 0.0;
@@ -184,7 +184,17 @@ HIBANA.prototype = {
 			this.__generateStartingVelocities( this.emitters[e] );
 		}
 	},
-
+	
+	setLifetimeMinimum: function ( new_min ) {
+		for ( e in this.emitters )
+			this.emitters[e].particle_lifetime_min = new_min;
+	},
+	
+	setLifetimeRange: function ( new_range ) {
+		for ( e in this.emitters )
+			this.emitters[e].particle_lifetime_range = new_range;
+	},
+		
 	age: function () {
 		if ( this.paused ) return this;
 		
@@ -197,7 +207,7 @@ HIBANA.prototype = {
 				new_particle.color = emitter.geometry.colors[ emitter.next_particle ];
 				new_particle.vertex.copy( emitter.starting_position[ emitter.next_particle ] );
 				new_particle.age = 0;
-				new_particle.life_expectancy = emitter.particle_life_expectancy_min + Math.random() * emitter.particle_life_expectancy_range;
+				new_particle.life_expectancy = emitter.particle_lifetime_min + Math.random() * emitter.particle_lifetime_range;
 				new_particle.velocity = emitter.starting_velocity[ emitter.next_particle ].clone();
 				
 				emitter.active_particles.push( new_particle );

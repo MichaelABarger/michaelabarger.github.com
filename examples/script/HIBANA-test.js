@@ -100,6 +100,18 @@ $(window).load( function() {
 	$("#angle-slider").change( function() {
 		hibana.setEmissionAngle( parseFloat( $(this).val() ) );
 	});
+	
+	$("#life-min-slider").change( function() {
+		hibana.setLifetimeMinimum( parseInt( $(this).val() ) );
+	});
+	
+	$("#life-range-slider").change( function() {
+		hibana.setLifetimeRange( parseFloat( $(this).val() ) );
+	});
+	
+	$("#force-slider").change( function() {
+		hibana.setEmissionForce( parseFloat( $(this).val() ) );
+	});
 });
 
 $(window).resize( function() {
@@ -131,7 +143,7 @@ function init3D() {
 	
 	hibana = new HIBANA( scene, { particle_size: 25.0 } );
 	
-	createObjects( 20 );
+	createObjects( 10 );
 	createEmitters();
 	createLights();
 	
@@ -162,8 +174,10 @@ function createObjects( objectCount ) {
 	objects = [];
 	areOrbiting = false;
 	for ( var i = 0; i < objectCount; i++ ) {
-		var object = new THREE.Mesh( new THREE.SphereGeometry( OBJECT_SIZE, OBJECT_DETAIL, OBJECT_DETAIL ),
-				new THREE.MeshPhongMaterial( { color: 0xFF0000, metal: true } ) );
+		var geo = (Math.round( Math.random() * 2.0) > 1)
+			? new THREE.SphereGeometry( OBJECT_SIZE, OBJECT_DETAIL, OBJECT_DETAIL )
+			: new THREE.CubeGeometry( OBJECT_SIZE, OBJECT_SIZE, OBJECT_SIZE );
+		var object = new THREE.Mesh( geo, new THREE.MeshPhongMaterial( { color: 0xFF0000, metal: true } ) );
 		object.position = createRandomPositionWithinRoom();
 		scene.add( object );
 		objects.push( object );
@@ -171,8 +185,14 @@ function createObjects( objectCount ) {
 }
 
 function createEmitters() {
+	var colors = [ 	new THREE.Color( 0xff9100 ),
+					new THREE.Color( 0xff0088 ),
+					new THREE.Color( 0x00ff08 ),
+					new THREE.Color( 0xf6ff00 ),
+					new THREE.Color( 0x00fffb ) ]
 	for ( o in objects ) {
-		hibana.addEmitter( objects[o], { particle_color: new THREE.Color( 0xff9100 ), jitter_factor: 0.1 } )
+		var c = Math.round( Math.random() * 5 );
+		hibana.addEmitter( objects[o], { particle_color: colors[c], jitter_factor: 0.1 } )
 	}
 }
 
