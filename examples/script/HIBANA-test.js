@@ -86,7 +86,7 @@ $(window).load( function() {
 	});
 	
 	$("#size-slider").change( function() {
-		hibana.setParticleSize( parseInt( $(this).val() ) );
+		hibana.setParticleSize( parseFloat( $(this).val() ) );
 	});
 	
 	$("#rate-slider").change( function() {
@@ -141,7 +141,7 @@ function init3D() {
 	createRoom();
 	createCamera();	
 	
-	hibana = new HIBANA( scene, { particle_size: 25.0 } );
+	hibana = new HIBANA( scene );
 	
 	createObjects( 10 );
 	createEmitters();

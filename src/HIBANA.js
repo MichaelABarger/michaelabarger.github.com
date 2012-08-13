@@ -32,12 +32,13 @@ HIBANA = function( scene, parameters ) {
 	this.scene = scene;
 	this.hidden_point = parameters.hidden_point || new THREE.Vector3( -1000, -1000, -1000 );
 	this.paused = parameters.paused || true;
-	this.particle_size = parameters.particle_size || 4.0;
+	this.particle_size = parameters.particle_size || 2.0;
 	this.texture = parameters.texture || __makeDefaultTexture();
 	this.global_force = parameters.global_force || new THREE.Vector3( 0.0, -0.05, 0.0 );
 	this.global_force_is_active = true;
 	
 	// thanks to Alteredq for inspiration on particle shader code!
+	// I'm not currently using these, but they are stored here for future reference
 	this.vertex_shader =
 		"uniform float amplitude;" +
 		"attribute float size;" +
@@ -105,7 +106,7 @@ HIBANA.prototype = {
 		emitter.geometry = new THREE.Geometry();
 		
 		parameters = parameters || {};
-		emitter.particle_count = parameters.particle_count || 300;
+		emitter.particle_count = parameters.particle_count || 400;
 		emitter.particle_color = parameters.particle_color || new THREE.Color( 0xFFFFFF );
 		emitter.rate = parameters.rate || 75;
 		emitter.particle_lifetime_min = parameters.particle_lifetime_min || 10;
