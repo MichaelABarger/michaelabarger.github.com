@@ -26,11 +26,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-HIBANA = function( scene, parameters ) {
+HIBANA = function( parameters ) {
 
 	parameters = parameters || {};
-	this.scene = scene;
-	this.hidden_point = parameters.hidden_point || new THREE.Vector3( -1000, -1000, -1000 );
 	this.paused = parameters.paused || true;
 	this.particle_size = parameters.particle_size || 2.0;
 	this.texture = parameters.texture || __makeDefaultTexture();
@@ -116,10 +114,11 @@ HIBANA.prototype = {
 		emitter.jitter_factor = parameters.jitter_factor || 0.0;
 		emitter.starting_position = THREE.GeometryUtils.randomPointsInGeometry( object.geometry, emitter.particle_count );
 		emitter.original_color = new THREE.Color().copy( emitter.particle_color );
-		
+		emitter.hidden_point = parameters.hidden_point || new THREE.Vector3( -1000, -1000, -1000 );
+
 		emitter.geometry.colors = [];
 		for ( var i = 0; i < emitter.particle_count; i++ ) {
-			emitter.geometry.vertices.push( new THREE.Vector3().copy( this.hidden_point ) );
+			emitter.geometry.vertices.push( new THREE.Vector3().copy( emitter.hidden_point ) );
 			emitter.geometry.colors.push( new THREE.Color().copy( emitter.original_color ) );
 		}
 		emitter.geometry.dynamic = true;
@@ -132,7 +131,7 @@ HIBANA.prototype = {
 		emitter.active_particles = [];
 		emitter.next_particle = 0;
 		
-		this.scene.add( emitter.system );
+		object.parent.add( emitter.system );
 		this.emitters.push( emitter );
 		
 		return this;
@@ -225,7 +224,7 @@ HIBANA.prototype = {
 			for ( p in this.emitters[e].active_particles ) {
 				var particle = this.emitters[e].active_particles[p];
 				if ( ++particle.age > particle.life_expectancy ) {
-					particle.vertex.copy( this.hidden_point );
+					particle.vertex.copy( this.emitters[e].hidden_point );
 					particle.color.copy( this.emitters[e].original_color );
 					this.emitters[e].active_particles.splice( p, 1 );
 				} else {
@@ -240,6 +239,25 @@ HIBANA.prototype = {
 		}	
 		return this;
 	},
+
+	clearAll: function () {
+		for ( e in this.emitters )
+			this.__clearAll( this.emitters[e] );
+	},
+
+	all: function( method_name ) {
+		for ( e in this.emitters )
+			this[method_name]( this.emitters[e] );
+	},
+
+	__clearAll: function ( emitter ) {
+		for ( p in emitter.active_particles ) {
+			emitter.active_particles[p].vertex.copy( emitter.hidden_point );
+			emitter.active_particles[p].color.copy( emitter.original_color );
+		}
+		emitter.active_particles = [];
+	},
+			
 	
 	__jitterVelocity : function ( velocity, emitter ) {
 		if ( !emitter.jitter_factor || velocity.isZero() )

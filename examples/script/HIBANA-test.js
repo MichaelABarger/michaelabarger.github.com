@@ -112,15 +112,17 @@ $(window).load( function() {
 	$("#force-slider").change( function() {
 		hibana.setEmissionForce( parseFloat( $(this).val() ) );
 	});
+
+	$("#clear-all").click( function() {
+		hibana.all( "__clearAll" );
+	});
 });
 
 $(window).resize( function() {
-
 	WIDTH = $("#main3d").width(); HEIGHT = $("#main3d").height();
 	camera.aspect = WIDTH / HEIGHT;
 	camera.updateProjectionMatrix();
 	renderer.setSize( WIDTH, HEIGHT );
-	
 });
 
 
@@ -141,7 +143,7 @@ function init3D() {
 	createRoom();
 	createCamera();	
 	
-	hibana = new HIBANA( scene );
+	hibana = new HIBANA();
 	
 	createObjects( 10 );
 	createEmitters();
@@ -179,6 +181,8 @@ function createObjects( objectCount ) {
 			: new THREE.CubeGeometry( OBJECT_SIZE, OBJECT_SIZE, OBJECT_SIZE );
 		var object = new THREE.Mesh( geo, new THREE.MeshPhongMaterial( { color: 0xFF0000, metal: true } ) );
 		object.position = createRandomPositionWithinRoom();
+		object.r = Math.sqrt( object.position.x * object.position.x + object.position.z * object.position.z );
+		object.theta = Math.atan2( object.position.z, object.position.x );
 		scene.add( object );
 		objects.push( object );
 	}
@@ -222,10 +226,8 @@ function createLights() {
 
 
 function animate() {
-	
 	requestAnimationFrame( animate );
 	render();
-	
 }
 
 function render() {
@@ -268,11 +270,13 @@ function decayCameraRotationalVelocity() {
 }
 
 function orbitObjects() {
-	var THETA = Math.PI / 200.0;
+	var INCREMENT = Math.PI / 200.0;
+
 	if ( !areOrbiting )
 		return;
 	for ( o in objects ) {
-		objects[o].position.x = objects[o].position.x * Math.cos( THETA ) - objects[o].position.z * Math.sin( THETA );
-		objects[o].position.z = objects[o].position.z * Math.cos( THETA ) + objects[o].position.x * Math.sin( THETA );
+		objects[o].position.x = objects[o].r * Math.cos( objects[o].theta );
+		objects[o].position.z = objects[o].r * Math.sin( objects[o].theta );
+		objects[o].theta += INCREMENT;
 	}	
 }
