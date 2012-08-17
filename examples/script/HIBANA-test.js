@@ -1,7 +1,11 @@
 /*
+HIBANA-test.js (https://github.com/MichaelABarger/HIBANA.js/examples/script/HIBANA-test.js)
+part of the HIBANA.js open-source project
+@author Michael A Barger
+
 The MIT License
 
-Copyright (c) 2012 Hibana.js authors.
+Copyright (c) 2012 HIBANA.js authors.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,13 +35,13 @@ var CAMERA_HOME = new THREE.Vector3( 0, 0, ROOM_DIM / 2 - OBJECT_SIZE );
 var CAMERA_TARGET = new THREE.Vector3( 0, 0, 0 );
 var AZIMUTH_RANGE = OBJECT_SIZE; 
 var MOUSE_SPEED = 0.0001
+var INCREMENT = Math.PI / 200.0;
 
 // global variables
 var azimuth = 0, zenith = 0, mouse_x = 0, mouse_y = 0, mouse_decay = true, mouse_is_down = false;
 var renderer, composer, camera, scene;
 var mouse_decay;
 var objects, areOrbiting;
-var hibana;
 
 
 // ****** Executes as soon as the window has loaded
@@ -69,7 +73,7 @@ $(window).load( function() {
 	});
 	
 	$("#play-pause").click( function() {
-		hibana.togglePause();
+		HIBANA.Emitters.all("togglePause");
 	});
 	
 	$("#show-hide").click( function() {
@@ -82,39 +86,39 @@ $(window).load( function() {
 	});
 	
 	$("#gravity").click( function() {
-		hibana.toggleGlobalForce();
+		HIBANA.Universal.toggle();
 	});
 	
 	$("#size-slider").change( function() {
-		hibana.setParticleSize( parseFloat( $(this).val() ) );
+		HIBANA.Emitters.all("setParticleSize", parseFloat( $(this).val() ) );
 	});
 	
 	$("#rate-slider").change( function() {
-		hibana.setRate( parseInt( $(this).val() ) );
+		HIBANA.Emitters.all("setRate", parseInt( $(this).val() ) );
 	});
 	
 	$("#jitter-slider").change( function() {
-		hibana.setJitterFactor( parseFloat( $(this).val() ) );
+		HIBANA.Emitters.all("setJitter", parseFloat( $(this).val() ) );
 	});
 	
 	$("#angle-slider").change( function() {
-		hibana.setEmissionAngle( parseFloat( $(this).val() ) );
+		HIBANA.Emitters.all("setAngle", parseFloat( $(this).val() ) );
 	});
 	
 	$("#life-min-slider").change( function() {
-		hibana.setLifetimeMinimum( parseInt( $(this).val() ) );
+		HIBANA.Emitters.all("setParticleLifetimeMin", parseInt( $(this).val() ) );
 	});
 	
 	$("#life-range-slider").change( function() {
-		hibana.setLifetimeRange( parseFloat( $(this).val() ) );
+		HIBANA.Emitters.all("setParticleLifetimeRange", parseFloat( $(this).val() ) );
 	});
 	
 	$("#force-slider").change( function() {
-		hibana.setEmissionForce( parseFloat( $(this).val() ) );
+		HIBANA.Emitters.all("setForce", parseFloat( $(this).val() ) );
 	});
 
 	$("#clear-all").click( function() {
-		hibana.all( "__clearAll" );
+		HIBANA.Emitters.all( "clear" );
 	});
 });
 
@@ -142,15 +146,11 @@ function init3D() {
 
 	createRoom();
 	createCamera();	
-	
-	hibana = new HIBANA();
-	
 	createObjects( 10 );
 	createEmitters();
 	createLights();
 	
 	animate();
-	
 }
 
 function createRoom() {
@@ -166,10 +166,10 @@ function createRoom() {
 }
 
 function createCamera() {
-    camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR );
+	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR );
 	camera.position = new THREE.Vector3().copy( CAMERA_HOME );
 	camera.lookAt( CAMERA_TARGET );
-    scene.add( camera );
+	scene.add( camera );
 }
 
 function createObjects( objectCount ) {
@@ -180,9 +180,10 @@ function createObjects( objectCount ) {
 			? new THREE.SphereGeometry( OBJECT_SIZE, OBJECT_DETAIL, OBJECT_DETAIL )
 			: new THREE.CubeGeometry( OBJECT_SIZE, OBJECT_SIZE, OBJECT_SIZE );
 		var object = new THREE.Mesh( geo, new THREE.MeshPhongMaterial( { color: 0xFF0000, metal: true } ) );
-		object.position = createRandomPositionWithinRoom();
-		object.r = Math.sqrt( object.position.x * object.position.x + object.position.z * object.position.z );
-		object.theta = Math.atan2( object.position.z, object.position.x );
+		object.r = Math.random() * (ROOM_DIM / 2 - OBJECT_SIZE);
+		object.theta = Math.random() * 2 * Math.PI;
+		object.position.y = Math.random() * (ROOM_DIM - OBJECT_SIZE) - (ROOM_DIM / 2);
+		updatePolarPositionToCartesian( object );
 		scene.add( object );
 		objects.push( object );
 	}
@@ -190,34 +191,21 @@ function createObjects( objectCount ) {
 
 function createEmitters() {
 	var colors = [ 	new THREE.Color( 0xff9100 ),
-					new THREE.Color( 0xff0088 ),
-					new THREE.Color( 0x00ff08 ),
-					new THREE.Color( 0xf6ff00 ),
-					new THREE.Color( 0x00fffb ) ]
+			new THREE.Color( 0xff0088 ),
+			new THREE.Color( 0x00ff08 ),
+			new THREE.Color( 0xf6ff00 ),
+			new THREE.Color( 0x00fffb ) ];
 	for ( o in objects ) {
-		var c = Math.round( Math.random() * 5 );
-		hibana.addEmitter( objects[o], { particle_color: colors[c], jitter_factor: 0.1 } )
+		var c = Math.round( Math.random() * 4 );
+		HIBANA.Emitters.add( objects[o], { particle_color: colors[c], jitter: 0.1 } );
 	}
 }
 
-function createRandomPositionWithinRoom() {
-	var x = createRandomCoordinateWithinRoom();
-	var y = createRandomCoordinateWithinRoom();
-	var z = createRandomCoordinateWithinRoom();
-	
-	return new THREE.Vector3( x, y, z );
-}
-
-function createRandomCoordinateWithinRoom() {
-	var maxDistanceFromCenter = ROOM_DIM / 2 - OBJECT_SIZE * 2;
-	return Math.random() * 2 * maxDistanceFromCenter - maxDistanceFromCenter;
-}
-
 function createLights() {
-	var point_light = new THREE.PointLight( 0xFFFFFF, 0.6);
+	var point_light = new THREE.PointLight( 0xFFFFFF, 0.05);
 	point_light.position.set( 0, 0, 0 );
 	scene.add( point_light );
-	var camera_light = new THREE.PointLight( 0xFFFFFF, 0.3);
+	var camera_light = new THREE.PointLight( 0xFFFFFF, 0.1);
 	camera_light.position = camera.position;
 	scene.add( camera_light );
 }
@@ -239,7 +227,7 @@ function render() {
 	camera.lookAt( CAMERA_TARGET );
 	
 	orbitObjects();
-	hibana.age();
+	HIBANA.age();
 	
 	renderer.render( scene, camera );
 	
@@ -269,14 +257,18 @@ function decayCameraRotationalVelocity() {
 	}
 }
 
-function orbitObjects() {
-	var INCREMENT = Math.PI / 200.0;
 
+function orbitObjects() {
 	if ( !areOrbiting )
 		return;
 	for ( o in objects ) {
-		objects[o].position.x = objects[o].r * Math.cos( objects[o].theta );
-		objects[o].position.z = objects[o].r * Math.sin( objects[o].theta );
 		objects[o].theta += INCREMENT;
+		updatePolarPositionToCartesian( objects[o] );
 	}	
+}
+
+function updatePolarPositionToCartesian( o ) {
+	o.position.x = o.r * Math.cos( o.theta );
+	o.position.z = o.r * Math.sin( o.theta );
+	return o;
 }
