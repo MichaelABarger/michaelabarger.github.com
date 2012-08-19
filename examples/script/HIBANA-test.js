@@ -1,7 +1,16 @@
 /*
 HIBANA-test.js (https://github.com/MichaelABarger/HIBANA.js/examples/script/HIBANA-test.js)
-part of the HIBANA.js open-source project
-@author Michael A Barger
+Part of the HIBANA.js open-source project, a WebGL particle engine for Three.js
+
+@author Michael A Barger (mikebarger@gmail.com)
+
+
+HIBANA-test.html (https://github.com/MichaelABarger/HIBANA.js/examples/HIBANA-test.html)
+Part of the HIBANA.js open-source project, a WebGL particle engine for Three.js
+
+@author Michael A Barger (mikebarger@gmail.com)
+
+author Michael A Barger
 
 The MIT License
 
@@ -100,6 +109,14 @@ $(window).load( function() {
 	$("#jitter-slider").change( function() {
 		HIBANA.Emitters.all("setJitter", parseFloat( $(this).val() ) );
 	});
+
+	$("#random-slider").change( function() {
+		HIBANA.Emitters.all("setRandom", parseFloat( $(this).val() ) );
+	});
+
+	$("#wavy-slider").change( function() {
+		HIBANA.Emitters.all("setWaviness", parseFloat( $(this).val() ) );
+	});
 	
 	$("#angle-slider").change( function() {
 		HIBANA.Emitters.all("setAngle", parseFloat( $(this).val() ) );
@@ -113,8 +130,12 @@ $(window).load( function() {
 		HIBANA.Emitters.all("setParticleLifetimeRange", parseFloat( $(this).val() ) );
 	});
 	
-	$("#force-slider").change( function() {
-		HIBANA.Emitters.all("setForce", parseFloat( $(this).val() ) );
+	$("#force-min-slider").change( function() {
+		HIBANA.Emitters.all("setForceMin", parseFloat( $(this).val() ) );
+	});
+
+	$("#force-range-slider").change( function() {
+		HIBANA.Emitters.all("setForceRange", parseFloat( $(this).val() ) );
 	});
 
 	$("#clear-all").click( function() {
@@ -190,14 +211,14 @@ function createObjects( objectCount ) {
 }
 
 function createEmitters() {
-	var colors = [ 	new THREE.Color( 0xff9100 ),
-			new THREE.Color( 0xff0088 ),
-			new THREE.Color( 0x00ff08 ),
-			new THREE.Color( 0xf6ff00 ),
-			new THREE.Color( 0x00fffb ) ];
+	var colors = [ 	new THREE.Color( 0xff9105 ),
+			new THREE.Color( 0xff0588 ),
+			new THREE.Color( 0x05ff08 ),
+			new THREE.Color( 0xf6ff05 ),
+			new THREE.Color( 0x05fffb ) ];
 	for ( o in objects ) {
 		var c = Math.round( Math.random() * 4 );
-		HIBANA.Emitters.add( objects[o], { particle_color: colors[c], jitter: 0.1 } );
+		HIBANA.Emitters.add( objects[o], { particle_color: colors[c] } );
 	}
 }
 

@@ -1,7 +1,8 @@
 /*
 HIBANA.js (https://github.com/MichaelABarger/HIBANA.js/src/HIBANA.js)
-part of the HIBANA.js open-source project
-@author Michael A Barger
+Part of the HIBANA.js open-source project, a WebGL particle engine for Three.js
+
+@author Michael A Barger (mikebarger@gmail.com)
 
 The MIT License
 
@@ -28,63 +29,100 @@ THE SOFTWARE.
 
 var HIBANA = {
 
-	age: function () { this.Emitters.all( "age" ); },
+	age: function () { HIBANA.Emitters.all( "age" ); },
 	
 	Emitters: { 
+
 		ref: [],
 
 		all: function ( method_name, arg ) {
-			var result = [];
-			if ( arg === undefined ) {
-				for ( i in this.ref )
-					result.push( this.ref[i][method_name]() );
-			} else {
-				for ( i in this.ref )
-					result.push( this.ref[i][method_name]( arg ) );
-			}
-			return result;
+			for ( e in HIBANA.Emitters.ref )
+				HIBANA.Emitters.ref[e][method_name]( arg );
 		},
 		
 		add: function ( object, parameters ) {
 			var new_emitter = new HIBANA.Emitter( object, parameters );
-			this.ref.push( new_emitter );
+			HIBANA.Emitters.ref.push( new_emitter );
 			return new_emitter;
 		},
 		
 		setDefaultParameters: function ( parameters ) {
 			for ( p in parameters )
-				HIBANA.Emitter.prototype[p] = parameters[p];
+				HIBANA.Emitters._default_parameters[p] = HIBANA._clone( parameters[p] );
 		},
+
+		_defaultParameters: {
+
+			paused:			true,
+			particle_count:		2000,
+			rate:			75,
+			particle_life_min:	10,
+			particle_life_range:	25,
+			angle:			0.0,
+			force_min:		0.03,
+			force_range:		0.03,
+			jitter:			0.0,
+			random:			0.0,
+			waviness:		0.0,
+			hidden_point:		new THREE.Vector3( -1000, -1000, -1000 ),
+			paused:			true,
+			particle_size:		2.0,
+			particle_color:		new THREE.Color( 0xFFFFFF ),
+			texture: 		(function () {
+				var canvas = document.createElement( 'canvas' );
+				canvas.width = 50;
+				canvas.height = 50;
+
+				var context = canvas.getContext( '2d' );
+				var gradient = context.createRadialGradient( canvas.width / 2, 
+						canvas.height / 2, 0, canvas.width / 2,
+						canvas.height / 2, canvas.width / 2 );
+				gradient.addColorStop( 0, 'rgba(255,255,255,1.0)' );
+				gradient.addColorStop( 0.15, 'rgba(255,255,255,.9)' );
+				gradient.addColorStop( 0.3, 'rgba(255,255,255,.6)' );
+				gradient.addColorStop( 0.5, 'rgba(255,255,255,.3)' );
+				gradient.addColorStop( 0.7, 'rgba(255,255,255,.1)' );
+				gradient.addColorStop( 1, 'rgba(0,0,0,0)' );
+
+				context.fillStyle = gradient;
+				context.fillRect( 0, 0, canvas.width, canvas.height );
+				
+				var texture = new THREE.Texture( canvas );
+				texture.needsUpdate = true;
+				
+				return texture;
+			}())
+		}
 	},
 		
 		
 	Universal:	{
+
 		force: new THREE.Vector3( 0.0, -0.05, 0.0 ),
 		
 		is_active: false,
 		
-		set: function( force ) { this.force = force; return this; },
+		set: function( force ) { HIBANA.Universal.force = force; },
 
-		get: function() { return this.force; },
-	
-		add: function( force ) { this.force.addSelf( force ); return this; },
+		add: function( force ) { HIBANA.Universal.force.addSelf( force ); },
 
-		remove: function( force ) { this.force.subSelf( force ); return this; },
+		remove: function( force ) { HIBANA.Universal.force.subSelf( force ); },
 		
-		activate: function() { this.is_active = true; },
+		activate: function() { HIBANA.Universal.is_active = true; },
 		
-		deactivate: function() { this.is_active = false; },
+		deactivate: function() { HIBANA.Universal.is_active = false; },
 		
-		toggle: function() { this.is_active = !this.is_active; }
+		toggle: function() { HIBANA.Universal.is_active = !HIBANA.Universal.is_active; }
 	},
 	
+
 	// JavaScript Clone code found on Keith Devens' blog, as written by him in collaboration with his readers
-	__clone: function ( obj ) {
+	_clone: function ( obj ) {
 		if ( obj == null || typeof(obj) != 'object' )	
 			return obj;
 		var temp = {};
 		for ( var key in obj )
-			temp[key] = HIBANA.__clone( obj[key] );
+			temp[key] = HIBANA._clone( obj[key] );
 		return temp;
 	}
 };
