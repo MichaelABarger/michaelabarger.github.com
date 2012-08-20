@@ -34,9 +34,10 @@ HIBANA.Emitter = function ( object, parameters ) {
 	for ( p in parameters )
 		this[p] = HIBANA._clone(parameters[p]);
 
-
+	this.time = new Date().getTime();
 	this.active_particles = [];
 	this.next_particle = 0;
+	this.overflow = 0;
 
 	this.starting_position = THREE.GeometryUtils.randomPointsInGeometry( object.geometry, this.particle_count );
 	
@@ -49,7 +50,7 @@ HIBANA.Emitter = function ( object, parameters ) {
 	this.geometry.dynamic = true;
 	
 
-	this._generateStartingVelocities();
+	this._generateInitialVelocities();
 
 	this._makeMaterial();
 	
@@ -78,32 +79,39 @@ HIBANA.Emitter.prototype = {
 
 		if ( this.paused ) return this;
 
+		var current_time = new Date().getTime();
+		var dt = current_time - this.time;
+		this.time = current_time;	 
+		var new_particle_count = Math.floor( dt * this.rate + this.overflow );
+		this.overflow = (dt * this.rate + this.overflow) - new_particle_count;
+
 		// generate new particles	
-		var r = 100 * Math.random();
-		for ( var i = 0; i < Math.floor( r / (101.0 - this.rate)); i++ ) {
+		for ( var i = 0; i < new_particle_count; i++ ) {
 			if ( this.active_particles.length > this.geometry.vertices.length )
 				break;
 
-			var new_particle = {};
-			
-			new_particle.vertex = this.geometry.vertices[ this.next_particle ];
-			new_particle.color = this.geometry.colors[ this.next_particle ];
+			var initial = this.initial_velocity[ this.next_particle ];
+			var new_particle = {
+				vertex: this.geometry.vertices[ this.next_particle ],
+				color:  this.geometry.colors[ this.next_particle ],
+				age:	0,
+				life:	Math.round(this.particle_life_min + Math.random() * this.particle_life_range),
+				initial_velocity: initial,
+				velocity: initial
+			};
 			new_particle.vertex.copy( this.starting_position[ this.next_particle ] );
-			new_particle.age = 0;
-			new_particle.life_expectancy = this.particle_life_min + Math.random() * this.particle_life_range;
-			new_particle.velocity = new_particle.starting_velocity = this.starting_velocity[ this.next_particle ].clone();
-			
+
 			this.active_particles.push( new_particle );
 			
-			if ( ++this.next_particle >= this.geometry.vertices.length )
+			if ( ++this.next_particle >= this.particle_count )
 				this.next_particle = 0;
 		}
-	
 	
 		// age active particles
 		for ( p in this.active_particles ) {
 			var particle = this.active_particles[p];
-			if ( ++particle.age > particle.life_expectancy ) {
+			if ( --particle.life <= 0 ) {
+				particle.age++;
 				particle.vertex.copy( this.hidden_point );
 				particle.color.copy( this.particle_color );
 				this.active_particles.splice( p, 1 );
@@ -124,9 +132,9 @@ HIBANA.Emitter.prototype = {
 					}
 				}
 				if ( this.waviness > 0.0 ) {
-					var starting_velocity = particle.starting_velocity;
-					var Q = new THREE.Vector3().cross( starting_velocity, starting_velocity.clone().addSelf( this._UNIT ) );
-					var R = new THREE.Vector3().cross( Q, starting_velocity );
+					var initial_velocity = particle.initial_velocity;
+					var Q = new THREE.Vector3().cross( initial_velocity, initial_velocity.clone().addSelf( this._UNIT ) );
+					var R = new THREE.Vector3().cross( Q, initial_velocity );
 					var offset = Math.random() * this.waviness - this.waviness / 2.0;
 					var dV = new THREE.Vector3().add( Q, R ).normalize().multiplyScalar( offset );
 					particle.velocity.addSelf( dV );
@@ -134,6 +142,8 @@ HIBANA.Emitter.prototype = {
 				if ( HIBANA.Universal.is_active )
 					particle.velocity.addSelf( HIBANA.Universal.force );
 				particle.vertex.addSelf( particle.velocity );
+
+				
 			}
 		}
 		
@@ -145,8 +155,16 @@ HIBANA.Emitter.prototype = {
 
 	
 	pause: function () { this.paused = true; return this; },
-	play: function () { this.paused = false; return this; },
-	togglePause: function() { this.paused = !this.paused; return this; },
+	play: function () { 
+		this.paused = false;
+		this.time = new Date().getTime();
+		return this;
+       	},
+	togglePause: function() {
+		this.paused = !this.paused;
+	       	this.time = new Date().getTime();
+		return this;
+	},
 
 	setParticleColor: function ( particle_color ) {
 		this.particle_color = particle_color;
@@ -169,40 +187,43 @@ HIBANA.Emitter.prototype = {
 	setParticleLifetimeMin: function ( min ) { this.particle_life_min = min; return this; },
 	setParticleLifetimeRange: function ( range ) { this.particle_life_range = range; return this; },
 
-	setRate: function ( rate ) { this.rate = rate; return this; },
+	setRate: function ( particles_per_second ) { 
+		this.rate = particles_per_second / 1000; 
+		return this;
+       	},
 	setAngle: function ( angle ) { 
 		this.angle = angle;
-		this._generateStartingVelocities();
+		this._generateInitialVelocities();
 		return this; 
 	},
 	setForceMin: function ( force_min ) { 
 		this.force_min = force_min;
-		this._generateStartingVelocities();
+		this._generateInitialVelocities();
 		return this;
 	},
 	setForceRange: function ( force_range ) {
 		this.force_range = force_range;
-		this._generateStartingVelocities();
+		this._generateInitialVelocities();
 		return this;
 	},
 	setJitter: function ( jitter ) { this.jitter = jitter; return this; },
 	setRandom: function ( random ) { this.random = random; return this; },
 	setWaviness: function ( waviness ) { this.waviness = waviness; return this; },
 
-	_generateStartingVelocities: function () {
-		this.starting_velocity = [];
+	_generateInitialVelocities: function () {
+		this.initial_velocity = [];
 		if ( this.angle == 0.0 ) {
 			var linear = new THREE.Vector3( 0, 1, 0 );
 			for ( i = 0; i < this.particle_count; i++ ) {
 				var force = this.force_min + this.force_range * Math.random(); 
-				this.starting_velocity.push( linear.clone().multiplyScalar( force ) );
+				this.initial_velocity.push( linear.clone().multiplyScalar( force ) );
 			}
 		} else {
 			for ( i = 0; i < this.particle_count; i++ ) {
 				var force = this.force_min + this.force_range * Math.random();
 				var zenith = Math.random() * this.angle * 2 - this.angle;
 				var azimuth = Math.random() * Math.PI * 2;
-				this.starting_velocity.push( new THREE.Vector3( force * Math.sin(zenith) * Math.sin(azimuth),
+				this.initial_velocity.push( new THREE.Vector3( force * Math.sin(zenith) * Math.sin(azimuth),
 							force * Math.cos(zenith),
 							force * Math.sin(zenith) * Math.cos(azimuth) ) );
 			}

@@ -55,7 +55,7 @@ var HIBANA = {
 
 			paused:			true,
 			particle_count:		2000,
-			rate:			75,
+			rate:			0.75,
 			particle_life_min:	10,
 			particle_life_range:	25,
 			angle:			0.0,
